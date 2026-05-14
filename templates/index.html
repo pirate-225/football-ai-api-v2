@@ -164,19 +164,56 @@ Away: {{ result.edge_away }}
 </div>
 {% endif %}
 
-<!-- 🔥 TOP BETS -->
+<!-- 🔥 TOP FAVORIS -->
 <div class="card">
-<h3>🔥 Top Bets</h3>
 
-{% if top_bets %}
-    {% for bet in top_bets %}
+<h3>🔥 Top Favoris</h3>
+
+{% if top_bets.favorites %}
+
+    {% for bet in top_bets.favorites %}
+
         <div style="margin-bottom:10px;">
+
             <strong>{{ bet.match }}</strong><br>
-            {{ bet.bet }} - {{ bet.value }}
+
+            {{ bet.bet }} — {{ bet.value }}
+
         </div>
+
     {% endfor %}
+
 {% else %}
-<p>❌ Aucun bet aujourd’hui</p>
+
+<p>❌ Aucun favori aujourd’hui</p>
+
+{% endif %}
+
+</div>
+
+<!-- 🔥 TOP OVERS -->
+<div class="card">
+
+<h3>🔥 Top Over 2.5</h3>
+
+{% if top_bets.overs %}
+
+    {% for bet in top_bets.overs %}
+
+        <div style="margin-bottom:10px;">
+
+            <strong>{{ bet.match }}</strong><br>
+
+            {{ bet.bet }} — {{ bet.value }}
+
+        </div>
+
+    {% endfor %}
+
+{% else %}
+
+<p>❌ Aucun over aujourd’hui</p>
+
 {% endif %}
 
 </div>

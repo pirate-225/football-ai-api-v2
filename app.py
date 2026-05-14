@@ -6,7 +6,9 @@ import os
 import requests  # 🔥 manquant
 
 def get_live_matches():
+
     try:
+
         url = "https://v3.football.api-sports.io/fixtures"
 
         headers = {
@@ -36,19 +38,25 @@ def get_live_matches():
             for f in res.get("response", []):
 
                 matches.append({
+
                     "home": f["teams"]["home"]["name"],
                     "away": f["teams"]["away"]["name"],
+
                     "home_id": f["teams"]["home"]["id"],
                     "away_id": f["teams"]["away"]["id"],
+
                     "league_id": f["league"]["id"],
                     "season": f["league"]["season"],
+
                     "fixture_id": f["fixture"]["id"]
                 })
 
         return matches
 
     except Exception as e:
+
         print("LIVE MATCH ERROR:", e)
+
         return []
 
 from predict_match import predict_match
@@ -81,11 +89,19 @@ def index():
     except:
         live_matches = []
 
-    # 🔥 TOP BETS (désactivé proprement pour éviter bugs)
+    # 🔥 TOP BETS
     try:
-        top_bets = []
-    except:
-        top_bets = []
+
+        top_bets = get_top_bets(live_matches)
+
+    except Exception as e:
+
+        print("TOP BETS ERROR:", e)
+
+        top_bets = {
+            "favorites": [],
+            "overs": []
+        }
 
     # 🔥 ANALYSE MANUELLE
     if request.method == "POST":
@@ -223,20 +239,6 @@ def index():
         message=message,
         live_matches=live_matches
     )
-
-    try:
-        return render_template(
-            "index.html",
-            teams=teams,
-            result=result,
-            top_bets=top_bets,
-            message=message,
-            live_matches=live_matches
-        )
-    except Exception as e:
-        print("RENDER ERROR:", e)
-        return "Erreur serveur"
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))

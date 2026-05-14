@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Top Bets</title>
+</head>
+<body>
+
+    <h1>🔥 Strong Favorites</h1>
+
+    {% for bet in favorites %}
+
+        <p>
+            {{ bet.match }}
+            |
+            {{ bet.pick }}
+            |
+            {{ bet.prob }}%
+        </p>
+
+    {% endfor %}
+
+    <hr>
+
+    <h1>⚽ Strong Overs 2.5</h1>
+
+    {% for bet in overs %}
+
+        <p>
+            {{ bet.match }}
+            |
+            Over 2.5
+            |
+            {{ bet.prob }}%
+        </p>
+
+    {% endfor %}
+
+</body>
+</html>
