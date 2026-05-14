@@ -7,7 +7,7 @@ def get_top_bets(live_data):
     favorites = []
     overs = []
 
-    for m in live_data[:500]:
+    for m in live_data[:300]:
 
         try:
 
@@ -115,6 +115,6 @@ def get_top_bets(live_data):
     )
 
     return {
-        "favorites": favorites[:500],
-        "overs": overs[:500]
+        "favorites": favorites[:300],
+        "overs": overs[:300]
     }
