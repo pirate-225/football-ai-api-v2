@@ -157,10 +157,11 @@ def index():
                 fixture_id = selected_match["fixture_id"]
 
                 # 🔥 xG API
-                xg_home_stats = {"xg_for": 1.2, "xg_against": 1.0}
-                xg_away_stats = {"xg_for": 1.2, "xg_against": 1.0}
-
-                h2h_home, h2h_away = 0, 0
+                xg_home_stats = get_team_xg_stats(
+                    selected_match["home_id"],
+                    selected_match["league_id"],
+                    selected_match["season"]
+                )
 
                 xg_away_stats = get_team_xg_stats(
                     selected_match["away_id"],
@@ -168,11 +169,13 @@ def index():
                     selected_match["season"]
                 )
 
-                # 🔥 H2H API
+                # 🔥 H2H
                 h2h_home, h2h_away = get_h2h(
                     selected_match["home_id"],
                     selected_match["away_id"]
                 )
+
+
 
                 odds_api = get_odds(fixture_id)
                 stats_api = get_match_stats(fixture_id)

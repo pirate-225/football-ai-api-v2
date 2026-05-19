@@ -24,8 +24,6 @@ def get_recent_form(team_id):
             params=params
         ).json()
 
-        print("FORM API RESPONSE:", res)
-
         points = 0
 
         for f in res.get("response", []):
@@ -56,8 +54,6 @@ def get_recent_form(team_id):
 
                 elif gh == ga:
                     points += 1
-
-        print("POINTS:", points)
 
         return points / 5
 
@@ -106,10 +102,95 @@ def predict_match(
         return None
 
     # 🔥 BASE STATS
-    home_attack = float(home_row["GoalsScoredAvg"])
-    home_def = float(home_row["GoalsConcededAvg"])
-    away_attack = float(away_row["GoalsScoredAvg"])
-    away_def = float(away_row["GoalsConcededAvg"])
+    # =========================
+    # 🔥 ADVANCED TEAM ENGINE
+    # =========================
+
+    # 🔥 GOALS
+    home_goals = float(
+        home_row["GoalsScoredAvg"]
+    )
+
+    away_goals = float(
+        away_row["GoalsScoredAvg"]
+    )
+
+    home_conceded = float(
+        home_row["GoalsConcededAvg"]
+    )
+
+    away_conceded = float(
+        away_row["GoalsConcededAvg"]
+    )
+
+    # 🔥 HOME / AWAY STRENGTH
+    home_attack_strength = float(
+        home_row["HomeAttack"]
+    )
+
+    away_attack_strength = float(
+        away_row["AwayAttack"]
+    )
+
+    # 🔥 ELO
+    home_elo = float(
+        home_row["ELO"]
+    )
+
+    away_elo = float(
+        away_row["ELO"]
+    )
+
+    elo_diff = (
+        home_elo - away_elo
+    ) / 120
+
+    # 🔥 FORM CSV
+    home_form_csv = float(
+        home_row["Form"]
+    )
+
+    away_form_csv = float(
+        away_row["Form"]
+    )
+
+    # 🔥 ATTACK ENGINE
+    home_attack = (
+
+        home_goals * 0.30 +
+
+        home_attack_strength * 0.35 +
+
+        home_form_csv * 0.15 +
+
+        (1 + elo_diff) * 0.20
+    )
+
+    away_attack = (
+
+        away_goals * 0.30 +
+
+        away_attack_strength * 0.35 +
+
+        away_form_csv * 0.15 +
+
+        (1 - elo_diff) * 0.20
+    )
+
+    # 🔥 DEFENSE ENGINE
+    home_def = (
+
+        home_conceded * 0.75 +
+
+        away_goals * 0.25
+    )
+
+    away_def = (
+
+        away_conceded * 0.75 +
+
+        home_goals * 0.25
+    )
 
     # 🔥 FORM
     try:
@@ -298,24 +379,78 @@ def predict_match(
 
     print("FORM:", home_form, away_form)
 
-    # 🔥 POISSON
-    def poisson(lmbda, k):
-        return (np.exp(-lmbda) * (lmbda ** k)) / math.factorial(k)
+    # =========================
+    # 🔥 DIXON-COLES POISSON
+    # =========================
 
-    prob_home = prob_draw = prob_away = 0
+    def poisson(lmbda, k):
+
+        return (
+            np.exp(-lmbda) *
+            (lmbda ** k)
+        ) / math.factorial(k)
+
+
+    # 🔥 DIXON-COLES CORRECTION
+    def dixon_coles(i, j, lambda_home, lambda_away, rho=0.12):
+
+        if i == 0 and j == 0:
+            return 1 - (lambda_home * lambda_away * rho)
+
+        elif i == 0 and j == 1:
+            return 1 + (lambda_home * rho)
+
+        elif i == 1 and j == 0:
+            return 1 + (lambda_away * rho)
+
+        elif i == 1 and j == 1:
+            return 1 - rho
+
+        return 1
+
+
+    prob_home = 0
+    prob_draw = 0
+    prob_away = 0
+
+    score_matrix = {}
 
     for i in range(6):
+
         for j in range(6):
-            p = poisson(lambda_home, i) * poisson(lambda_away, j)
+
+            base_p = (
+                poisson(lambda_home, i) *
+                poisson(lambda_away, j)
+            )
+
+            dc_adjust = dixon_coles(
+                i,
+                j,
+                lambda_home,
+                lambda_away
+            )
+
+            p = base_p * dc_adjust
+
+            score_matrix[(i, j)] = p
+
             if i > j:
                 prob_home += p
+
             elif i == j:
                 prob_draw += p
+
             else:
                 prob_away += p
 
+
     # 🔥 NORMALISATION
-    total = prob_home + prob_draw + prob_away
+    total = (
+        prob_home +
+        prob_draw +
+        prob_away
+    )
 
     prob_home /= total
     prob_draw /= total
@@ -329,7 +464,78 @@ def predict_match(
     else:
         prediction = "DRAW"
 
-    confidence = abs(prob_home - prob_away)
+    # =========================
+    # 🔥 ADVANCED CONFIDENCE ENGINE
+    # =========================
+
+    # 🔥 BASE PROBA
+    base_conf = abs(
+        prob_home - prob_away
+    )
+
+    # 🔥 ELO IMPACT
+    elo_conf = min(
+        abs(elo_diff) * 0.35,
+        0.25
+    )
+
+    # 🔥 ATTACK DOMINATION
+    attack_conf = min(
+        abs(home_attack - away_attack) * 0.12,
+        0.20
+    )
+
+    # 🔥 LAMBDA DOMINATION
+    lambda_conf = min(
+        abs(lambda_home - lambda_away) * 0.15,
+        0.20
+    )
+
+    # 🔥 MARKET AGREEMENT
+    market_conf = 0
+
+    if prediction == "HOME":
+        market_conf = max(
+            market_home - market_away,
+            0
+        )
+
+    elif prediction == "AWAY":
+        market_conf = max(
+            market_away - market_home,
+            0
+        )
+
+    market_conf *= 0.25
+
+    # 🔥 FORM IMPACT
+    form_conf = min(
+        abs(home_form - away_form) * 0.04,
+        0.10
+    )
+
+    # 🔥 FINAL CONFIDENCE
+    confidence = (
+
+        base_conf * 0.35 +
+
+        elo_conf * 0.25 +
+
+        attack_conf * 0.15 +
+
+        lambda_conf * 0.15 +
+
+        market_conf * 0.08 +
+
+        form_conf * 0.02
+    
+    )
+
+    # 🔥 LIMITES
+    confidence = max(
+        min(confidence, 0.95),
+        0.01
+    )
 
     # =========================
     # 🔥 PROBA BOOKMAKER

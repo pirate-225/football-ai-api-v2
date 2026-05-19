@@ -164,20 +164,36 @@ Away: {{ result.edge_away }}
 </div>
 {% endif %}
 
-<!-- 🔥 TOP FAVORIS -->
+<!-- 💰 VALUE BETS -->
 <div class="card">
 
-<h3>🔥 Top Favoris</h3>
+<h3>💰 Value Bets</h3>
 
 {% if top_bets.favorites %}
 
     {% for bet in top_bets.favorites %}
 
-        <div style="margin-bottom:10px;">
+        <div style="margin-bottom:15px;">
 
             <strong>{{ bet.match }}</strong><br>
 
-            {{ bet.bet }} — {{ bet.value }}
+            🎯 Bet :
+            {{ bet.bet }}<br>
+
+            💰 Value :
+            {{ bet.value_bet }}<br>
+
+            🔥 Confidence :
+            {{ bet.confidence }}<br>
+
+            🏠 Home :
+            {{ bet.home_prob }}<br>
+
+            🤝 Draw :
+            {{ bet.draw_prob }}<br>
+
+            ✈️ Away :
+            {{ bet.away_prob }}
 
         </div>
 
@@ -185,7 +201,7 @@ Away: {{ result.edge_away }}
 
 {% else %}
 
-<p>❌ Aucun favori aujourd’hui</p>
+<p>❌ Aucun value bet aujourd’hui</p>
 
 {% endif %}
 
